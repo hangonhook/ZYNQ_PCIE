@@ -42,7 +42,8 @@ module ltc2208_ctrl
     localparam S_FLUSH  = 3'd1;  // 用于 Flush
     localparam S_HEADER = 3'd2;  // 用于 Header
     localparam S_RUN    = 3'd3;  // 所有值采集
-    localparam S_DONE   = 3'd4;
+    localparam S_PAD    = 3'd4;  // 用于填充127个64位数据
+    localparam S_DONE   = 3'd5;
 
     reg [2:0]  state;
     reg [31:0] trig_counter;     // 当前已触发次数 (0 ~ TOTAL_TRIGGERS)
@@ -147,9 +148,29 @@ module ltc2208_ctrl
                     // 3. 自动停止条件
                     // 当触发次数满了，并且最后一次数据也发完了
                     if((trig_counter >= TOTAL_TRIGGERS) && (samp_counter == SAMP)) begin
-                        state <= S_DONE;
+                        state <= S_PAD;
+                        samp_counter <= 0;
                     end
                 end
+                
+                S_PAD: begin
+                    // 需要发送 127 个 64位数据
+                    // data_packer 是每 4 个 16位 拼成 1 个 64位
+                    // 所以需要发送 127 * 4 = 508 个 16位零
+                    
+                    if(samp_counter < 508) begin
+                        alldata_out  <= 16'd0; // 发送 0
+                        alldata_en   <= 1;     // 数据有效
+                        samp_counter <= samp_counter + 1;
+                    end
+                    else begin
+                        // 填完后，alldata_en 会在下一个周期自动拉低(如果你的逻辑里有else alldata_en<=0)
+                        // 或者在这里显式拉低(取决于你 default 的写法)
+                        alldata_en <= 0; 
+                        state <= S_DONE; // 填充完毕，正式结束
+                    end
+                
+                end 
                 
                 S_DONE: begin
                     // 发送结束信号 (持续一个周期)

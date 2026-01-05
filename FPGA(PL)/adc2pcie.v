@@ -195,8 +195,8 @@ parameter [23:0] TRIALL = BSCAN_POINT * BSCAN_NUM;
 
 parameter [31:0] DATA_LEN_WORDS = (TRIALL * SAMP) >> 1; //右移1位等于除以2，数据单位为32位
 
-//有效数据量DATA_LEN_WORDS个32位数据 加上 数据包头(64位=2个32位)
-parameter [31:0] PCIE_TX_LEN_VAL = DATA_LEN_WORDS + 2; 
+//有效数据量DATA_LEN_WORDS个32位数据 加上 数据包头(64位=2个32位) 加上 508个16'd0
+parameter [31:0] PCIE_TX_LEN_VAL = DATA_LEN_WORDS + 2 + 254; 
 
 assign rst_n = locked ; //全局总复位 等待ddr初始化完成& ddr3_init_done
 
@@ -247,6 +247,7 @@ assign samp_tri = (start_cmd_pulse || PL_KEY2_flag) && (~sw_phase_active);
 // ============================================================
 reg start_cmd_d1;
 reg start_cmd_d2;
+reg start_cmd_d3;
 wire global_flush; 
 
 // 将 start_cmd_pulse (来自 PCIe 域) 同步到 DCOA (数据域)
@@ -254,15 +255,17 @@ always @(posedge DCOA or negedge rst_n) begin
     if(!rst_n) begin
         start_cmd_d1 <= 1'b0;
         start_cmd_d2 <= 1'b0;
+        start_cmd_d3 <= 1'b0;
     end
     else begin
         start_cmd_d1 <= start_cmd_pulse; 
         start_cmd_d2 <= start_cmd_d1;
+        start_cmd_d3 <= start_cmd_d2;
     end
 end
 
 // 生成 global_flush：仅使用上位机命令，不受按键或 ADC 状态机干扰
-assign global_flush = start_cmd_d2; 
+assign global_flush = start_cmd_d2 & (~start_cmd_d3);
 // ============================================================
 
 
@@ -355,7 +358,8 @@ ltc2208_ctrl
 
 //数据拼接：4个16位数据拼接1个64位，便于PCIe传输
 //格式：[最新数据][buf2][buf1][最早数据] (Little Endian 风格)
-data_packer data_packer_inst (
+data_packer data_packer_inst 
+(
     .clk        (DCOA),             // 时钟域跟随 ADC 写时钟
     .rst_n      (rst_n),
     
