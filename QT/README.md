@@ -7,6 +7,8 @@ test文件夹为例程，使用构建套件为Qt 6.5.3 MinGW 64-bit，其他上�
 
 pcie_alldata_v3.3在pcie_alldata_v3.2的基础上增大了接受长度，对应Verilog代码中(ltc2208_ctrl.v)增加的S_PAD状态，即填充127个64'd0。
 
+pcie_alldata_v3.4在pcie_alldata_v3.3的基础上改变采样点数samp_point由512改为256。
+
 pcie_alldata程序逻辑：
 
 “开始”按键：发送1个32'd10---fpga_recv接收数据（接受长度大于实际数据长度）---寻找数据包头---接收包头后的有效数据---以最大值投影和归一化的方式根据有效数据显示图像---保存有效数据。
