@@ -9,6 +9,8 @@ pcie_alldata_v3.3在pcie_alldata_v3.2的基础上增大了接受长度，对应V
 
 pcie_alldata_v3.4在pcie_alldata_v3.3的基础上改变采样点数samp_point由512改为256。
 
+pcie_alldata_v3.5在pcie_alldata_v3.3的基础上改变采样点数samp_point由512改为128。
+
 pcie_alldata程序逻辑：
 
 “开始”按键：发送1个32'd10---fpga_recv接收数据（接受长度大于实际数据长度）---寻找数据包头---接收包头后的有效数据---以最大值投影和归一化的方式根据有效数据显示图像---保存有效数据。
